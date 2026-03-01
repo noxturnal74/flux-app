@@ -1,0 +1,1247 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FLUX — Idea to Action</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0d0d0d;
+    --surface: #161616;
+    --surface2: #1f1f1f;
+    --border: #2a2a2a;
+    --text: #f0ede8;
+    --muted: #5a5a5a;
+    --accent: #e8ff47;
+    --accent2: #ff6b35;
+    --accent3: #7cf5c8;
+    --worth: #e8ff47;
+    --maybe: #ff9f1c;
+    --archive: #444;
+    --font-head: 'Syne', sans-serif;
+    --font-mono: 'DM Mono', monospace;
+  }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-head);
+    overflow: hidden;
+  }
+
+  /* Noise overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 1000;
+    opacity: 0.5;
+  }
+
+  #app {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    grid-template-rows: 56px 1fr;
+    height: 100vh;
+    position: relative;
+  }
+
+  /* HEADER */
+  header {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    padding: 0 24px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg);
+    gap: 16px;
+    position: relative;
+    z-index: 10;
+  }
+
+  .logo {
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: -0.05em;
+    color: var(--accent);
+  }
+
+  .logo span { color: var(--text); opacity: 0.3; }
+
+  .header-tabs {
+    display: flex;
+    gap: 2px;
+    background: var(--surface);
+    border-radius: 8px;
+    padding: 3px;
+    border: 1px solid var(--border);
+  }
+
+  .tab-btn {
+    padding: 5px 14px;
+    border-radius: 6px;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    font-family: var(--font-head);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .tab-btn.active {
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+
+  .header-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+
+  .idea-count {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .idea-count strong { color: var(--accent); }
+
+  /* SIDEBAR */
+  aside {
+    border-right: 1px solid var(--border);
+    background: var(--surface);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .sidebar-header {
+    padding: 16px 20px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .sidebar-title {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+
+  .filter-chips {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .chip {
+    padding: 3px 10px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    background: transparent;
+    color: var(--muted);
+    font-family: var(--font-head);
+  }
+
+  .chip.active-all { border-color: var(--accent); color: var(--accent); }
+  .chip.active-worth { border-color: var(--worth); color: var(--worth); background: rgba(232,255,71,0.08); }
+  .chip.active-maybe { border-color: var(--maybe); color: var(--maybe); background: rgba(255,159,28,0.08); }
+  .chip.active-archive { border-color: var(--archive); color: #666; }
+
+  .idea-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px;
+  }
+
+  .idea-list::-webkit-scrollbar { width: 4px; }
+  .idea-list::-webkit-scrollbar-track { background: transparent; }
+  .idea-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .idea-card {
+    padding: 12px 14px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.15s;
+    margin-bottom: 4px;
+    position: relative;
+  }
+
+  .idea-card:hover { background: var(--surface2); border-color: var(--border); }
+  .idea-card.selected { background: var(--surface2); border-color: var(--border); }
+
+  .idea-card-title {
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.4;
+    margin-bottom: 6px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .idea-card-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .status-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .status-dot.worth { background: var(--worth); box-shadow: 0 0 6px var(--worth); }
+  .status-dot.maybe { background: var(--maybe); }
+  .status-dot.archive { background: #444; }
+
+  .card-date {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--muted);
+  }
+
+  .empty-state {
+    padding: 32px 20px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.7;
+  }
+
+  /* MAIN CONTENT */
+  main {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--bg);
+  }
+
+  /* DUMP VIEW */
+  #dump-view {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 32px 40px;
+    gap: 24px;
+    animation: fadeIn 0.2s ease;
+  }
+
+  .dump-prompt {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    line-height: 1.2;
+    color: var(--text);
+  }
+
+  .dump-prompt span { color: var(--accent); }
+
+  .dump-area {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    transition: border-color 0.2s;
+  }
+
+  .dump-area:focus-within { border-color: var(--accent); }
+
+  textarea {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 15px;
+    line-height: 1.7;
+    resize: none;
+    placeholder-color: var(--muted);
+  }
+
+  textarea::placeholder { color: var(--muted); font-style: italic; }
+
+  .dump-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+  }
+
+  .dump-hint { font-size: 11px; color: var(--muted); font-family: var(--font-mono); }
+
+  .btn-primary {
+    padding: 10px 24px;
+    background: var(--accent);
+    color: #0d0d0d;
+    border: none;
+    border-radius: 8px;
+    font-family: var(--font-head);
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 0.02em;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(232,255,71,0.3); }
+  .btn-primary:active { transform: translateY(0); }
+
+  .btn-secondary {
+    padding: 8px 16px;
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-family: var(--font-head);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .btn-secondary:hover { color: var(--text); border-color: var(--text); }
+
+  /* TRIAGE VIEW */
+  #triage-view {
+    display: none;
+    flex-direction: column;
+    height: 100%;
+    animation: fadeIn 0.2s ease;
+  }
+
+  .triage-header {
+    padding: 28px 40px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .triage-title { font-size: 22px; font-weight: 800; letter-spacing: -0.04em; margin-bottom: 4px; }
+  .triage-sub { font-size: 12px; color: var(--muted); font-family: var(--font-mono); }
+
+  .triage-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .triage-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    animation: slideIn 0.2s ease forwards;
+    transition: border-color 0.2s;
+  }
+
+  .triage-item:hover { border-color: var(--surface2); }
+
+  .triage-text {
+    flex: 1;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.4;
+  }
+
+  .triage-actions { display: flex; gap: 8px; flex-shrink: 0; }
+
+  .triage-btn {
+    padding: 6px 14px;
+    border-radius: 6px;
+    border: 1px solid;
+    font-family: var(--font-head);
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .triage-btn.worth {
+    border-color: var(--worth);
+    color: var(--worth);
+    background: rgba(232,255,71,0.05);
+  }
+  .triage-btn.worth:hover { background: rgba(232,255,71,0.15); }
+
+  .triage-btn.maybe {
+    border-color: var(--maybe);
+    color: var(--maybe);
+    background: rgba(255,159,28,0.05);
+  }
+  .triage-btn.maybe:hover { background: rgba(255,159,28,0.15); }
+
+  .triage-btn.archive {
+    border-color: var(--archive);
+    color: #666;
+    background: transparent;
+  }
+  .triage-btn.archive:hover { background: rgba(255,255,255,0.03); }
+
+  /* FOCUS VIEW */
+  #focus-view {
+    display: none;
+    flex-direction: column;
+    height: 100%;
+    animation: fadeIn 0.2s ease;
+  }
+
+  .focus-hero {
+    padding: 32px 40px 24px;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+  }
+
+  .focus-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .focus-status-badge.worth { border: 1px solid var(--worth); color: var(--worth); background: rgba(232,255,71,0.08); }
+  .focus-status-badge.maybe { border: 1px solid var(--maybe); color: var(--maybe); background: rgba(255,159,28,0.08); }
+
+  .focus-idea-title {
+    font-size: 30px;
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    line-height: 1.2;
+    margin-bottom: 12px;
+  }
+
+  .focus-idea-body {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: #888;
+    line-height: 1.7;
+    max-width: 600px;
+  }
+
+  .focus-content {
+    flex: 1;
+    padding: 28px 40px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .next-action-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .next-action-block::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: var(--accent);
+    border-radius: 3px 0 0 3px;
+  }
+
+  .block-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 10px;
+  }
+
+  .next-action-input {
+    width: 100%;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 15px;
+    line-height: 1.6;
+    font-style: italic;
+  }
+
+  .next-action-input::placeholder { color: var(--muted); }
+
+  .notes-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .notes-block::before { content: none; }
+
+  .notes-input {
+    flex: 1;
+    width: 100%;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    line-height: 1.8;
+    resize: none;
+    min-height: 120px;
+  }
+
+  .notes-input::placeholder { color: var(--muted); font-style: italic; }
+
+  .focus-toolbar {
+    padding: 16px 40px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .btn-done {
+    padding: 10px 24px;
+    background: var(--accent3);
+    color: #0d0d0d;
+    border: none;
+    border-radius: 8px;
+    font-family: var(--font-head);
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .btn-done:hover { opacity: 0.85; transform: translateY(-1px); }
+
+  .btn-danger {
+    padding: 9px 16px;
+    background: transparent;
+    color: #e55;
+    border: 1px solid #422;
+    border-radius: 8px;
+    font-family: var(--font-head);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    margin-left: auto;
+  }
+
+  .btn-danger:hover { border-color: #e55; background: rgba(238,85,85,0.08); }
+
+  /* EMPTY MAIN */
+  .empty-main {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    gap: 16px;
+    color: var(--muted);
+    text-align: center;
+  }
+
+  .empty-main .big-icon { font-size: 48px; opacity: 0.3; }
+  .empty-main p { font-size: 13px; line-height: 1.7; font-family: var(--font-mono); }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateX(-8px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  .status-triage {
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    font-family: var(--font-mono);
+  }
+  .status-triage.pending { background: rgba(255,107,53,0.2); color: var(--accent2); }
+
+  .focus-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--muted);
+    gap: 12px;
+  }
+
+  .focus-empty .icon { font-size: 40px; opacity: 0.2; }
+  .focus-empty p { font-size: 12px; font-family: var(--font-mono); }
+
+  /* GOOGLE CALENDAR */
+  .gcal-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px 24px;
+  }
+  .gcal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .gcal-label {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase;
+    color: #4285F4; display: flex; align-items: center; gap: 6px;
+  }
+  .btn-gcal-login {
+    display: flex; align-items: center; gap: 8px; padding: 8px 16px;
+    background: white; color: #3c4043; border: none; border-radius: 6px;
+    font-family: var(--font-head); font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s;
+  }
+  .btn-gcal-login:hover { background: #f8f8f8; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+  .gcal-user { display: flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 11px; color: var(--muted); }
+  .gcal-user-dot { width: 6px; height: 6px; background: #34a853; border-radius: 50%; box-shadow: 0 0 6px #34a853; }
+  .btn-gcal-logout {
+    padding: 3px 8px; background: transparent; border: 1px solid var(--border); border-radius: 4px;
+    color: var(--muted); font-size: 10px; font-family: var(--font-mono); cursor: pointer; transition: all 0.15s;
+  }
+  .btn-gcal-logout:hover { color: var(--text); border-color: #555; }
+  .gcal-form { display: flex; flex-direction: column; gap: 10px; }
+  .gcal-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .gcal-input-group { display: flex; flex-direction: column; gap: 4px; }
+  .gcal-input-label { font-size: 10px; font-family: var(--font-mono); color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+  .gcal-input {
+    background: var(--bg); border: 1px solid var(--border); border-radius: 6px;
+    padding: 7px 10px; color: var(--text); font-family: var(--font-mono); font-size: 12px;
+    outline: none; transition: border-color 0.15s; width: 100%;
+  }
+  .gcal-input:focus { border-color: #4285F4; }
+  .btn-schedule {
+    padding: 9px 20px; background: #4285F4; color: white; border: none; border-radius: 8px;
+    font-family: var(--font-head); font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.15s; align-self: flex-start;
+  }
+  .btn-schedule:hover { background: #3367d6; transform: translateY(-1px); }
+  .btn-schedule:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+  .gcal-status {
+    font-family: var(--font-mono); font-size: 11px; padding: 6px 10px; border-radius: 6px; display: none;
+  }
+  .gcal-status.success { background: rgba(52,168,83,0.15); color: #34a853; display: block; }
+  .gcal-status.error { background: rgba(234,67,53,0.15); color: #ea4335; display: block; }
+  .gcal-status.loading { background: rgba(66,133,244,0.1); color: #4285F4; display: block; }
+  .gcal-locked { text-align: center; padding: 12px; color: var(--muted); font-family: var(--font-mono); font-size: 11px; line-height: 1.7; }
+
+  /* SETUP MODAL */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 500;
+    display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px); animation: fadeIn 0.2s ease;
+  }
+  .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 32px; width: 500px; max-width: 90vw; }
+  .modal-title { font-size: 20px; font-weight: 800; letter-spacing: -0.04em; margin-bottom: 8px; }
+  .modal-sub { font-size: 12px; color: var(--muted); font-family: var(--font-mono); line-height: 1.7; margin-bottom: 20px; }
+  .modal-steps { background: var(--bg); border-radius: 10px; padding: 16px; margin-bottom: 20px; font-family: var(--font-mono); font-size: 11px; line-height: 2.1; color: #888; }
+  .modal-steps a { color: #4285F4; text-decoration: none; }
+  .modal-steps a:hover { text-decoration: underline; }
+  .modal-steps strong { color: var(--text); }
+  .modal-input-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+  .modal-input-label { font-size: 11px; font-family: var(--font-mono); color: var(--muted); }
+  .modal-input {
+    background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+    padding: 10px 14px; color: var(--text); font-family: var(--font-mono); font-size: 13px; outline: none; width: 100%; transition: border-color 0.15s;
+  }
+  .modal-input:focus { border-color: #4285F4; }
+  .modal-footer { display: flex; gap: 10px; justify-content: flex-end; }
+
+  /* GOOGLE CALENDAR */
+  .gcal-section { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px 24px; }
+  .gcal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .gcal-label { font-size: 10px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: #4285F4; display: flex; align-items: center; gap: 6px; }
+  .btn-gcal-login { display: flex; align-items: center; gap: 8px; padding: 8px 16px; background: white; color: #3c4043; border: none; border-radius: 6px; font-family: var(--font-head); font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+  .btn-gcal-login:hover { background: #f0f0f0; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+  .gcal-user { display: flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 11px; color: var(--muted); }
+  .gcal-user-dot { width: 6px; height: 6px; background: #34a853; border-radius: 50%; box-shadow: 0 0 6px #34a853; }
+  .btn-gcal-logout { padding: 3px 8px; background: transparent; border: 1px solid var(--border); border-radius: 4px; color: var(--muted); font-size: 10px; font-family: var(--font-mono); cursor: pointer; }
+  .btn-gcal-logout:hover { color: var(--text); border-color: #555; }
+  .gcal-form { display: flex; flex-direction: column; gap: 10px; }
+  .gcal-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .gcal-input-group { display: flex; flex-direction: column; gap: 4px; }
+  .gcal-input-label { font-size: 10px; font-family: var(--font-mono); color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+  .gcal-input { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 7px 10px; color: var(--text); font-family: var(--font-mono); font-size: 12px; outline: none; transition: border-color 0.15s; width: 100%; }
+  .gcal-input:focus { border-color: #4285F4; }
+  .btn-schedule { padding: 9px 20px; background: #4285F4; color: white; border: none; border-radius: 8px; font-family: var(--font-head); font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.15s; align-self: flex-start; }
+  .btn-schedule:hover { background: #3367d6; transform: translateY(-1px); }
+  .btn-schedule:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+  .gcal-status { font-family: var(--font-mono); font-size: 11px; padding: 6px 10px; border-radius: 6px; display: none; }
+  .gcal-status.success { background: rgba(52,168,83,0.15); color: #34a853; display: block; }
+  .gcal-status.error { background: rgba(234,67,53,0.15); color: #ea4335; display: block; }
+  .gcal-status.loading { background: rgba(66,133,244,0.1); color: #4285F4; display: block; }
+  .gcal-locked { text-align: center; padding: 8px 0; color: var(--muted); font-family: var(--font-mono); font-size: 11px; line-height: 1.7; }
+  /* MODAL */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 500; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px); animation: fadeIn 0.2s ease; }
+  .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 32px; width: 500px; max-width: 90vw; }
+  .modal-title { font-size: 20px; font-weight: 800; letter-spacing: -0.04em; margin-bottom: 8px; }
+  .modal-sub { font-size: 12px; color: var(--muted); font-family: var(--font-mono); line-height: 1.7; margin-bottom: 20px; }
+  .modal-steps { background: var(--bg); border-radius: 10px; padding: 16px; margin-bottom: 20px; font-family: var(--font-mono); font-size: 11px; line-height: 2.1; color: #888; }
+  .modal-steps a { color: #4285F4; text-decoration: none; }
+  .modal-steps strong { color: var(--text); }
+  .modal-input-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+  .modal-input-label { font-size: 11px; font-family: var(--font-mono); color: var(--muted); }
+  .modal-input { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; color: var(--text); font-family: var(--font-mono); font-size: 13px; outline: none; width: 100%; }
+  .modal-footer { display: flex; gap: 10px; justify-content: flex-end; }
+</style>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="logo">FLUX<span>—</span></div>
+    <div class="header-tabs">
+      <button class="tab-btn active" onclick="switchTab('dump')">💡 Dump</button>
+      <button class="tab-btn" onclick="switchTab('triage')">⚡ Triage</button>
+      <button class="tab-btn" onclick="switchTab('focus')">🎯 Focus</button>
+    </div>
+    <div class="header-right">
+      <div class="idea-count" id="idea-count"></div>
+    </div>
+  </header>
+
+  <aside>
+    <div class="sidebar-header">
+      <div class="sidebar-title">Semua Ide</div>
+      <div class="filter-chips">
+        <button class="chip active-all" onclick="setFilter('all', this)">All</button>
+        <button class="chip" onclick="setFilter('worth', this)">Worth it</button>
+        <button class="chip" onclick="setFilter('maybe', this)">Maybe</button>
+        <button class="chip" onclick="setFilter('archive', this)">Archive</button>
+      </div>
+    </div>
+    <div class="idea-list" id="idea-list"></div>
+  </aside>
+
+  <main id="main-content">
+    <!-- DUMP VIEW -->
+    <div id="dump-view">
+      <div class="dump-prompt">Otak lagi penuh?<br><span>Tuang semua di sini.</span></div>
+      <div class="dump-area">
+        <textarea id="dump-input" placeholder="Ketik ide apapun yang ada di kepalamu sekarang...
+Satu baris = satu ide, atau tulis bebas.
+Jangan filter. Jangan edit. Just dump it." rows="12"></textarea>
+        <div class="dump-footer">
+          <span class="dump-hint">Enter = baris baru · Semua tersimpan otomatis</span>
+          <button class="btn-primary" onclick="saveDump()">
+            Simpan Semua →
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TRIAGE VIEW -->
+    <div id="triage-view">
+      <div class="triage-header">
+        <div class="triage-title">Pilah ide kamu</div>
+        <div class="triage-sub" id="triage-sub-count">— ide belum di-triage</div>
+      </div>
+      <div class="triage-list" id="triage-list"></div>
+    </div>
+
+    <!-- FOCUS VIEW -->
+    <div id="focus-view">
+      <div class="focus-empty" id="focus-empty">
+        <div class="icon">🎯</div>
+        <p>Pilih ide dari sidebar<br>untuk masuk mode fokus</p>
+      </div>
+      <div id="focus-detail" style="display:none; flex-direction:column; height:100%;">
+        <div class="focus-hero">
+          <div class="focus-status-badge" id="focus-badge"></div>
+          <div class="focus-idea-title" id="focus-title"></div>
+          <div class="focus-idea-body" id="focus-body"></div>
+        </div>
+        <div class="focus-content">
+          <div class="next-action-block">
+            <div class="block-label">⚡ Next Action</div>
+            <input type="text" class="next-action-input" id="focus-next-action" placeholder="Langkah terkecil berikutnya adalah...">
+          </div>
+          <div class="notes-block">
+            <div class="block-label" style="color: var(--accent3);">📝 Notes</div>
+            <textarea class="notes-input" id="focus-notes" placeholder="Tulis catatan, breakdown, atau apapun tentang ide ini..."></textarea>
+          </div>
+
+          <!-- GOOGLE CALENDAR SECTION -->
+          <div class="gcal-section">
+            <div class="gcal-header">
+              <div class="gcal-label">
+                <svg width="14" height="14" viewBox="0 0 24 24"><path d="M19 4H18V2H16V4H8V2H6V4H5C3.9 4 3 4.9 3 6V20C3 21.1 3.9 22 5 22H19C20.1 22 21 21.1 21 20V6C21 4.9 20.1 4 19 4ZM19 20H5V9H19V20Z" fill="#4285F4"/></svg>
+                Google Calendar
+              </div>
+              <div id="gcal-auth-area">
+                <button class="btn-gcal-login" id="gcal-login-btn" onclick="gcalLogin()">
+                  <img src="https://www.google.com/favicon.ico" width="14" height="14" alt="G">
+                  Hubungkan Google
+                </button>
+              </div>
+            </div>
+            <div id="gcal-body">
+              <div class="gcal-locked" id="gcal-locked">Login dengan Google di atas untuk schedule ide ini ke kalendermu.</div>
+              <div class="gcal-form" id="gcal-form" style="display:none;">
+                <div class="gcal-row">
+                  <div class="gcal-input-group">
+                    <div class="gcal-input-label">Tanggal</div>
+                    <input type="date" class="gcal-input" id="gcal-date">
+                  </div>
+                  <div class="gcal-input-group">
+                    <div class="gcal-input-label">Jam mulai</div>
+                    <input type="time" class="gcal-input" id="gcal-time" value="09:00">
+                  </div>
+                </div>
+                <div class="gcal-input-group">
+                  <div class="gcal-input-label">Durasi (menit)</div>
+                  <input type="number" class="gcal-input" id="gcal-duration" value="60" min="15" max="480">
+                </div>
+                <button class="btn-schedule" id="btn-schedule" onclick="scheduleToCalendar()">Tambah ke Google Calendar</button>
+              </div>
+            </div>
+            <div class="gcal-status" id="gcal-status"></div>
+          </div>
+        </div>
+
+        <div class="focus-toolbar">
+          <button class="btn-done" onclick="markDone()">✓ Done / Eksekusi</button>
+          <button class="btn-secondary" onclick="saveIdea()">Simpan</button>
+          <button class="btn-danger" onclick="deleteIdea()">Hapus</button>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+  let ideas = JSON.parse(localStorage.getItem('flux_ideas') || '[]');
+  let currentFilter = 'all';
+  let selectedId = null;
+  let currentTab = 'dump';
+
+  // Sample starter ideas
+  if (ideas.length === 0) {
+    ideas = [
+      { id: 1, title: "Bikin newsletter mingguan soal desain", body: "Kirim setiap Senin pagi, target 500 subscriber pertama dalam 3 bulan", status: "worth", nextAction: "Daftar platform Beehiiv atau Substack", notes: "", createdAt: new Date(Date.now() - 86400000*2).toISOString() },
+      { id: 2, title: "App tracker pengeluaran dengan foto struk", body: "Foto struk → OCR → auto-kategori. Capek input manual.", status: "maybe", nextAction: "", notes: "", createdAt: new Date(Date.now() - 86400000).toISOString() },
+      { id: 3, title: "Course online tentang Figma untuk pemula", body: "", status: "archive", nextAction: "", notes: "Sudah banyak kompetitor, terlalu saturated", createdAt: new Date().toISOString() },
+    ];
+    save();
+  }
+
+  function save() {
+    localStorage.setItem('flux_ideas', JSON.stringify(ideas));
+    renderSidebar();
+    updateCount();
+  }
+
+  function updateCount() {
+    const pending = ideas.filter(i => !i.status || i.status === 'pending').length;
+    const worth = ideas.filter(i => i.status === 'worth').length;
+    document.getElementById('idea-count').innerHTML =
+      `<strong>${worth}</strong> worth it · ${ideas.length} total`;
+  }
+
+  function formatDate(iso) {
+    const d = new Date(iso);
+    return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+  }
+
+  function renderSidebar() {
+    const list = document.getElementById('idea-list');
+    let filtered = currentFilter === 'all' ? ideas : ideas.filter(i => i.status === currentFilter);
+    filtered = [...filtered].reverse();
+
+    if (filtered.length === 0) {
+      list.innerHTML = `<div class="empty-state">Belum ada ide<br>di kategori ini.</div>`;
+      return;
+    }
+
+    list.innerHTML = filtered.map(idea => `
+      <div class="idea-card ${idea.id === selectedId ? 'selected' : ''}" onclick="selectIdea(${idea.id})">
+        <div class="idea-card-title">${escHtml(idea.title)}</div>
+        <div class="idea-card-meta">
+          <div class="status-dot ${idea.status || 'maybe'}"></div>
+          <span class="card-date">${formatDate(idea.createdAt)}</span>
+          ${!idea.status || idea.status === 'pending' ? '<span class="status-triage pending">triage</span>' : ''}
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function setFilter(f, el) {
+    currentFilter = f;
+    document.querySelectorAll('.chip').forEach(c => c.className = 'chip');
+    if (f === 'all') el.className = 'chip active-all';
+    else if (f === 'worth') el.className = 'chip active-worth';
+    else if (f === 'maybe') el.className = 'chip active-maybe';
+    else el.className = 'chip active-archive';
+    renderSidebar();
+  }
+
+  function selectIdea(id) {
+    selectedId = id;
+    renderSidebar();
+    const idea = ideas.find(i => i.id === id);
+    if (!idea) return;
+
+    // Switch to focus tab
+    switchTab('focus');
+
+    // Populate
+    const badge = document.getElementById('focus-badge');
+    badge.textContent = idea.status === 'worth' ? '✦ Worth It' : idea.status === 'maybe' ? '◐ Maybe Later' : '○ Archived';
+    badge.className = 'focus-status-badge ' + (idea.status || 'maybe');
+    document.getElementById('focus-title').textContent = idea.title;
+    document.getElementById('focus-body').textContent = idea.body || '';
+    document.getElementById('focus-next-action').value = idea.nextAction || '';
+    document.getElementById('focus-notes').value = idea.notes || '';
+
+    document.getElementById('focus-empty').style.display = 'none';
+    document.getElementById('focus-detail').style.display = 'flex';
+  }
+
+  function switchTab(tab) {
+    currentTab = tab;
+    document.querySelectorAll('.tab-btn').forEach((b, i) => {
+      b.classList.remove('active');
+      if (['dump','triage','focus'][i] === tab) b.classList.add('active');
+    });
+
+    document.getElementById('dump-view').style.display = tab === 'dump' ? 'flex' : 'none';
+    document.getElementById('triage-view').style.display = tab === 'triage' ? 'flex' : 'none';
+    document.getElementById('focus-view').style.display = tab === 'focus' ? 'flex' : 'none';
+
+    if (tab === 'triage') renderTriage();
+    if (tab === 'dump') document.getElementById('dump-input').focus();
+  }
+
+  function saveDump() {
+    const raw = document.getElementById('dump-input').value.trim();
+    if (!raw) return;
+
+    const lines = raw.split('\n').filter(l => l.trim());
+    lines.forEach(line => {
+      ideas.push({
+        id: Date.now() + Math.random(),
+        title: line.trim().slice(0, 100),
+        body: line.trim().length > 100 ? line.trim().slice(100) : '',
+        status: 'pending',
+        nextAction: '',
+        notes: '',
+        createdAt: new Date().toISOString()
+      });
+    });
+
+    document.getElementById('dump-input').value = '';
+    save();
+
+    // Auto-switch to triage
+    switchTab('triage');
+  }
+
+  function renderTriage() {
+    const pending = ideas.filter(i => !i.status || i.status === 'pending');
+    const sub = document.getElementById('triage-sub-count');
+    const list = document.getElementById('triage-list');
+
+    if (pending.length === 0) {
+      sub.textContent = `Semua ide sudah di-triage 🎉`;
+      list.innerHTML = `<div style="padding: 48px; text-align:center; color: var(--muted); font-family: var(--font-mono); font-size: 13px;">
+        Semua sudah dipilah!<br>Pergi ke <strong style="color:var(--text)">Focus</strong> untuk eksekusi.
+      </div>`;
+      return;
+    }
+
+    sub.textContent = `${pending.length} ide menunggu keputusanmu`;
+    list.innerHTML = pending.map(idea => `
+      <div class="triage-item" id="triage-${idea.id}">
+        <div class="triage-text">${escHtml(idea.title)}</div>
+        <div class="triage-actions">
+          <button class="triage-btn worth" onclick="triageIdea(${idea.id}, 'worth')">Worth It</button>
+          <button class="triage-btn maybe" onclick="triageIdea(${idea.id}, 'maybe')">Maybe</button>
+          <button class="triage-btn archive" onclick="triageIdea(${idea.id}, 'archive')">Archive</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function triageIdea(id, status) {
+    const idea = ideas.find(i => i.id === id);
+    if (idea) idea.status = status;
+    save();
+    // Animate out
+    const el = document.getElementById(`triage-${id}`);
+    if (el) {
+      el.style.transition = 'all 0.2s ease';
+      el.style.opacity = '0';
+      el.style.transform = 'translateX(20px)';
+      setTimeout(() => renderTriage(), 200);
+    }
+  }
+
+  function saveIdea() {
+    if (!selectedId) return;
+    const idea = ideas.find(i => i.id === selectedId);
+    if (idea) {
+      idea.nextAction = document.getElementById('focus-next-action').value;
+      idea.notes = document.getElementById('focus-notes').value;
+      save();
+    }
+  }
+
+  function markDone() {
+    if (!selectedId) return;
+    const idea = ideas.find(i => i.id === selectedId);
+    if (idea) {
+      idea.nextAction = document.getElementById('focus-next-action').value;
+      idea.notes = document.getElementById('focus-notes').value;
+      idea.status = 'archive';
+      idea.doneAt = new Date().toISOString();
+      save();
+      selectedId = null;
+      document.getElementById('focus-empty').style.display = 'flex';
+      document.getElementById('focus-detail').style.display = 'none';
+    }
+  }
+
+  function deleteIdea() {
+    if (!selectedId) return;
+    if (!confirm('Hapus ide ini?')) return;
+    ideas = ideas.filter(i => i.id !== selectedId);
+    selectedId = null;
+    save();
+    document.getElementById('focus-empty').style.display = 'flex';
+    document.getElementById('focus-detail').style.display = 'none';
+  }
+
+  // Auto-save on input
+  document.addEventListener('input', e => {
+    if (e.target.id === 'focus-next-action' || e.target.id === 'focus-notes') {
+      saveIdea();
+    }
+  });
+
+  // Keyboard shortcut: Ctrl+Enter to save dump
+  document.getElementById('dump-input').addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') saveDump();
+  });
+
+
+  // ============ GOOGLE CALENDAR ============
+  const GCAL_SCOPE = 'https://www.googleapis.com/auth/calendar.events';
+  let gcalToken = null;
+  let gcalUser = null;
+  let gcalClientId = localStorage.getItem('flux_gcal_client_id') || '';
+
+  function gcalLogin() {
+    if (!gcalClientId) {
+      document.getElementById('setup-modal').style.display = 'flex';
+      const saved = localStorage.getItem('flux_gcal_client_id');
+      if (saved) document.getElementById('client-id-input').value = saved;
+      return;
+    }
+    startOAuth();
+  }
+
+  function startOAuth() {
+    const client = google.accounts.oauth2.initTokenClient({
+      client_id: gcalClientId,
+      scope: GCAL_SCOPE,
+      callback: (resp) => {
+        if (resp.error) { showGcalStatus('Login gagal: ' + resp.error, 'error'); return; }
+        gcalToken = resp.access_token;
+        fetchGcalUserInfo(resp.access_token);
+      }
+    });
+    client.requestAccessToken();
+  }
+
+  async function fetchGcalUserInfo(token) {
+    try {
+      const r = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+        headers: { Authorization: 'Bearer ' + token }
+      });
+      const data = await r.json();
+      gcalUser = data.email || 'Google User';
+      updateGcalUI(true);
+    } catch(e) {
+      gcalUser = 'Google User';
+      updateGcalUI(true);
+    }
+  }
+
+  function updateGcalUI(loggedIn) {
+    const authArea = document.getElementById('gcal-auth-area');
+    const locked = document.getElementById('gcal-locked');
+    const form = document.getElementById('gcal-form');
+    if (loggedIn) {
+      authArea.innerHTML = '<div class="gcal-user"><div class="gcal-user-dot"></div><span>' + gcalUser + '</span><button class="btn-gcal-logout" onclick="gcalLogout()">Logout</button></div>';
+      if (locked) locked.style.display = 'none';
+      if (form) { form.style.display = 'flex'; setDefaultDate(); }
+    } else {
+      authArea.innerHTML = '<button class="btn-gcal-login" onclick="gcalLogin()"><img src="https://www.google.com/favicon.ico" width="14" height="14" alt="G"> Hubungkan Google</button>';
+      if (locked) locked.style.display = 'block';
+      if (form) form.style.display = 'none';
+    }
+  }
+
+  function gcalLogout() {
+    gcalToken = null;
+    gcalUser = null;
+    updateGcalUI(false);
+  }
+
+  function setDefaultDate() {
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth()+1).padStart(2,'0');
+    const dd = String(today.getDate()).padStart(2,'0');
+    const el = document.getElementById('gcal-date');
+    if (el && !el.value) el.value = yyyy+'-'+mm+'-'+dd;
+  }
+
+  async function scheduleToCalendar() {
+    if (!gcalToken || !selectedId) return;
+    const idea = ideas.find(i => i.id === selectedId);
+    if (!idea) return;
+
+    const dateVal = document.getElementById('gcal-date').value;
+    const timeVal = document.getElementById('gcal-time').value;
+    const duration = parseInt(document.getElementById('gcal-duration').value) || 60;
+
+    if (!dateVal || !timeVal) { showGcalStatus('Isi tanggal dan jam dulu ya!', 'error'); return; }
+
+    const startDt = new Date(dateVal + 'T' + timeVal + ':00');
+    const endDt = new Date(startDt.getTime() + duration * 60000);
+
+    const event = {
+      summary: idea.title,
+      description: (idea.body ? idea.body + '\n\n' : '') + (idea.nextAction ? 'Next Action: ' + idea.nextAction : ''),
+      start: { dateTime: startDt.toISOString(), timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone },
+      end: { dateTime: endDt.toISOString(), timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone }
+    };
+
+    showGcalStatus('Menambahkan ke kalender...', 'loading');
+    const btn = document.getElementById('btn-schedule');
+    if (btn) btn.disabled = true;
+
+    try {
+      const r = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + gcalToken, 'Content-Type': 'application/json' },
+        body: JSON.stringify(event)
+      });
+      const data = await r.json();
+      if (data.id) {
+        showGcalStatus('Berhasil! Event ditambahkan ke Google Calendar kamu.', 'success');
+        idea.calendarEventId = data.id;
+        idea.scheduledAt = startDt.toISOString();
+        save();
+      } else {
+        throw new Error(data.error?.message || 'Unknown error');
+      }
+    } catch(e) {
+      showGcalStatus('Gagal: ' + e.message, 'error');
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }
+
+  function showGcalStatus(msg, type) {
+    const el = document.getElementById('gcal-status');
+    if (!el) return;
+    el.textContent = msg;
+    el.className = 'gcal-status ' + type;
+    if (type === 'success') setTimeout(() => { el.className = 'gcal-status'; }, 4000);
+  }
+
+  function saveClientId() {
+    const val = document.getElementById('client-id-input').value.trim();
+    if (!val) return;
+    gcalClientId = val;
+    localStorage.setItem('flux_gcal_client_id', val);
+    closeSetupModal();
+    setTimeout(() => startOAuth(), 300);
+  }
+
+  function closeSetupModal() {
+    document.getElementById('setup-modal').style.display = 'none';
+  }
+
+  // Init
+  renderSidebar();
+  updateCount();
+  switchTab('dump');
+</script>
+
+<!-- SETUP MODAL -->
+<div class="modal-overlay" id="setup-modal" style="display:none;">
+  <div class="modal">
+    <div class="modal-title">Setup Google OAuth</div>
+    <div class="modal-sub">Untuk sync ke Google Calendar, kamu perlu Google OAuth Client ID. Gratis, sekali setup, sekitar 3 menit.</div>
+    <div class="modal-steps">
+      <strong>Cara mendapatkan Client ID:</strong><br>
+      1. Buka <a href="https://console.cloud.google.com" target="_blank">console.cloud.google.com</a><br>
+      2. Buat project baru, lalu ke APIs &amp; Services &gt; Credentials<br>
+      3. Create Credentials &gt; OAuth Client ID &gt; Web application<br>
+      4. Di Authorized JavaScript origins, tambahkan URL ini<br>
+      5. Enable Google Calendar API di Library<br>
+      6. Copy Client ID dan paste di bawah
+    </div>
+    <div class="modal-input-group">
+      <div class="modal-input-label">Google OAuth Client ID</div>
+      <input type="text" class="modal-input" id="client-id-input" placeholder="xxxxxxxxxxxxxxxx.apps.googleusercontent.com">
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeSetupModal()">Batal</button>
+      <button class="btn-primary" onclick="saveClientId()">Simpan dan Login</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>
